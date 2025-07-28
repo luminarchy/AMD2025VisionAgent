@@ -106,7 +106,7 @@ class Filter:
                     # img = Image.open(io.BytesIO(image_bytes))
                     # logger.info("image opened")
                     # a = np.asarray(img)
-                    with open(f"/app/backend/data/mcp/image{self.count}.txt", "w") as file:
+                    with open(f"/app/backend/data/images/image{self.count}.txt", "w") as file:
                         logger.info("writing to file")
                         file.write(encoded)
                         logger.info("file written")

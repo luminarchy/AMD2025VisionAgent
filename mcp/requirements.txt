@@ -1,3 +1,7 @@
-numpy
 opencv-python
 scipy
+transformers
+requests
+mcpo
+fastmcp
+numpy==1.26.4

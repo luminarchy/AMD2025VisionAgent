@@ -5,10 +5,13 @@ import logging
 from PIL import Image
 import cv2
 
-
-def conv64toarray(b64: str):
+def conv64toim(b64: str):
     image_bytes = base64.b64decode(b64)
     img = Image.open(io.BytesIO(image_bytes))
+    return img
+
+def conv64toarray(b64: str):
+    img = conv64toim(b64)
     a = np.asarray(img)
     return a/255.0
 

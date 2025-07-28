@@ -28,7 +28,7 @@ services:
       # NCCL_IB_DISABLE: 1
       HSA_ENABLE_IPC_MODE_LEGACY: 0
       # why not have all of them 
-
+      VLLM_USE_TRITON_FLASH_ATTN: 0
       HF_HUB_CACHE: /hf_home
 
     volumes:
@@ -36,7 +36,7 @@ services:
       - /home/amysuo12/amd2025test/vllm:/app
     command: ["/bin/sh", 
               "-c", 
-              "vllm serve amd/Llama-3.3-70B-Instruct-FP8-KV --port 8001 
+              "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code 
               "]
       # --tensor-parallel-size 2
       # --max-model-len 74782
@@ -45,48 +45,48 @@ services:
       #         --tool-parser-plugin ./xlam_tool_call_parser.py
       #         --tool-call-parser xlam
   
-  vision:
-    image: rocm/vllm:latest
-    devices:
-      - /dev/kfd
-      - /dev/dri
-    security_opt:
-      - seccomp:unconfined
+  # vision:
+  #   image: rocm/vllm:latest
+  #   devices:
+  #     - /dev/kfd
+  #     - /dev/dri
+  #   security_opt:
+  #     - seccomp:unconfined
     
-    group_add:
-      - "video"
-      - "render"
-    ipc: 
-      "host"
-    ports: 
-      - "8001:8001"
-    cap_add:
-      - SYS_PTRACE
-    environment: 
-      HIP_VISIBLE_DEVICES: 5
-      #ROCR_VISIBLE_DEVICES: 5,6
+  #   group_add:
+  #     - "video"
+  #     - "render"
+  #   ipc: 
+  #     "host"
+  #   ports: 
+  #     - "8001:8001"
+  #   cap_add:
+  #     - SYS_PTRACE
+  #   environment: 
+  #     HIP_VISIBLE_DEVICES: 5
+  #     #ROCR_VISIBLE_DEVICES: 5,6
 
-      # one of these makes it work and idk which ones
-      # VLLM_SKIP_P2P_CHECK: 1
-      # NCCL_CUMEM_ENABLE: 0
-      # NCCL_IB_DISABLE: 1
-      HSA_ENABLE_IPC_MODE_LEGACY: 0
-      # why not have all of them 
+  #     # one of these makes it work and idk which ones
+  #     # VLLM_SKIP_P2P_CHECK: 1
+  #     # NCCL_CUMEM_ENABLE: 0
+  #     # NCCL_IB_DISABLE: 1
+  #     HSA_ENABLE_IPC_MODE_LEGACY: 0
+  #     # why not have all of them 
 
-      HF_HUB_CACHE: /hf_home
+  #     HF_HUB_CACHE: /hf_home
 
-    volumes:
-      - /shared/huggingface:/hf_home
-    command: ["/bin/sh", 
-              "-c", 
-              "vllm serve HURIDOCS/pdf-document-layout-analysis --port 8001 --gpu-memory-utilization 0.95
-              "]
-      # --tensor-parallel-size 2
-      # --max-model-len 74782
-      # Salesforce/Llama-xLAM-2-70b-fc-r
-      #         --enable-auto-tool-choice
-      #         --tool-parser-plugin ./xlam_tool_call_parser.py
-      #         --tool-call-parser xlam
+  #   volumes:
+  #     - /shared/huggingface:/hf_home
+  #   command: ["/bin/sh", 
+  #             "-c", 
+  #             "vllm serve HURIDOCS/pdf-document-layout-analysis --port 8001 --gpu-memory-utilization 0.95
+  #             "]
+  #     # --tensor-parallel-size 2
+  #     # --max-model-len 74782
+  #     # Salesforce/Llama-xLAM-2-70b-fc-r
+  #     #         --enable-auto-tool-choice
+  #     #         --tool-parser-plugin ./xlam_tool_call_parser.py
+  #     #         --tool-call-parser xlam
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
 
@@ -98,6 +98,7 @@ services:
     
     volumes:
       - /home/amysuo12/amd2025test/open-webui:/app/backend/data
+      - /home/amysuo12/amd2025test/images:/app/backend/data/images
     devices:
       - /dev/kfd
       - /dev/dri    
@@ -107,24 +108,20 @@ services:
       # what open webui needs to connect to vllm automatically
       ENABLE_OLLAMA_API: false
   
-  # mcp:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.base
-  #   ports: 
-  #     - "8002:8002"
-  #   depends_on: 
-  #     - vllm
-  #   environment:
-  #     # OPENAI_API_BASE_URL: "http://vllm:8001/v1"
-  #     # OPENAI_KEY: "EMPTY"
-  #     # OPENAI_MODEL: "Salesforce/Llama-xLAM-2-70b-fc-r"
-  #     DB_NAME: "database"
-  #     DB_FILE: "database.xlsx"
-  #     DB_ID: -1
-  #     NUM_COLS: 3
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports: 
+      - "8002:8002"
+
+    volumes: 
+      - /home/amysuo12/amd2025test/images:/mcp/images
+    environment: 
+      HIP_VISIBLE_DEVICES: 4
+    
       
-  #   command: ["mcpo", "--port", "8002", "--", "python", "server.py"]
+    command: ["mcpo", "--port", "8002", "--", "python", "server.py"]
 
 
 
