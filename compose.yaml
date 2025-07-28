@@ -33,10 +33,9 @@ services:
 
     volumes:
       - /shared/huggingface:/hf_home
-      - /home/amysuo12/amd2025test/vllm:/app
     command: ["/bin/sh", 
               "-c", 
-              "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code 
+              "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code --enable-lora --max-lora-rank 320 --lora-extra-vocab-size 0 --limit-mm-per-prompt audio=3,image=3 --max-loras 2 --lora-modules speech=/speech-lora vision=/vision-lora
               "]
       # --tensor-parallel-size 2
       # --max-model-len 74782
@@ -91,14 +90,14 @@ services:
     image: ghcr.io/open-webui/open-webui:main
 
     ports:
-      - "3000:8080"
+      - "2000:8080"
 
     restart: always
     ipc: "host"
     
     volumes:
-      - /home/amysuo12/amd2025test/open-webui:/app/backend/data
-      - /home/amysuo12/amd2025test/images:/app/backend/data/images
+      - /home/amysuo12/AMD2025VisionAgent/open-webui:/app/backend/data
+      - /home/amysuo12/AMD2025VisionAgent/open-webui/images:/app/backend/data/images
     devices:
       - /dev/kfd
       - /dev/dri    
@@ -116,7 +115,7 @@ services:
       - "8002:8002"
 
     volumes: 
-      - /home/amysuo12/amd2025test/images:/mcp/images
+      - /home/amysuo12/AMD2025VisionAgent/open-webui/images:/mcp/images
     environment: 
       HIP_VISIBLE_DEVICES: 4
     

@@ -7,6 +7,7 @@ import requests
 from transformers import RTDetrV2ForObjectDetection, RTDetrImageProcessor
 import torch
 from PIL import Image
+import cv2
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ def register_select(mcp):
                 label = classes_map[label_id.item()]
                 box = [round(i, 2) for i in box.tolist()]
                 output += (f"{label}:{score} {box} \n")
+        return output
 
     
     @mcp.tool()
@@ -95,6 +97,7 @@ def register_select(mcp):
         img = im.conv64toarray(img)
         img = np.uint8(np.dot(img, correction) * 255)
         save = "corrected" + file
+        cv2.imwrite("/imags/corrected_" + file, img)
 
         
     
@@ -119,3 +122,4 @@ def register_select(mcp):
         imglms = np.dot(img[:,:,:3], im.lms())
         imglms = np.uint8(np.dot(img, matrix))
         imgrgb = np.uint8(np.dot(imglms, im.rgb()) * 255)
+        cv2.imwrite("/imags/simulated_" + file, imgrgb)
