@@ -1,16 +1,16 @@
 """
 title: Image convertor
-requirements: numpy
+requirements: numpy, opencv-python
 """
 
-from PIL import Image
-import numpy as np
+
 from pydantic import BaseModel, Field
 from typing import Callable, Awaitable, Any, Optional, Literal
-import json
 import logging
+import os
 
 from open_webui.utils.misc import get_last_user_message_item
+
 
 def setup_logger():
     logger = logging.getLogger(__name__)
@@ -29,6 +29,7 @@ def setup_logger():
 
 logger = setup_logger()
 
+
 class Filter:
     class Valves(BaseModel):
         enabled_for_admins: bool = Field(
@@ -42,7 +43,10 @@ class Filter:
         pass
 
     def __init__(self):
+        if not os.path.exists("/app/backend/data/mcp"):
+            os.makedirs("/app/backend/data/mcp")
         self.valves = self.Valves()
+        self.count = 0
         pass
 
     async def inlet(
@@ -52,12 +56,12 @@ class Filter:
         __model__: Optional[dict] = None,
         __user__: Optional[dict] = None,
     ) -> dict:
+        logger.info(f"path: {os.path.abspath(__file__)}")
         if __user__ is not None:
             if __user__.get("role") == "admin" and not self.valves.enabled_for_admins:
                 return body
             elif __user__.get("role") == "user" and not self.valves.enabled_for_users:
                 return body
-
         messages = body.get("messages")
         if messages is None:
             # Handle the case where messages is None
@@ -67,7 +71,7 @@ class Filter:
         if user_message is None:
             # Handle the case where user_message is None
             return body
-        
+
         logger.info("getting images")
         images = []
         msg = []
@@ -77,6 +81,7 @@ class Filter:
             body["messages"][-1]["images"] = None
             images = user_message.get("images")
         if not has_images:
+            logger.info("reading content")
             user_message_content = user_message.get("content")
             if user_message_content is not None and isinstance(
                 user_message_content, list
@@ -86,21 +91,45 @@ class Filter:
                 )
                 for item in user_message_content:
                     if item.get("type") == "image_url":
-                        images.append(item)
+                        images.append(item.get("image_url").get("url"))
                     else:
                         msg.append(item)
-        logger.info(f"images: {images}")
+        x = body["messages"][-1]
         if has_images:
             ims = []
             try:
                 for image in images:
-                    img = Image.open(image)
-                    a = np.asarray(img)
-                    ims.append(str(a.tolist()))
+                    logger.info("parsing image")
+                    header, encoded = image.split(",", 1)
+                    # image_bytes = base64.b64decode(encoded)
+                    # logger.info("image opening")
+                    # img = Image.open(io.BytesIO(image_bytes))
+                    # logger.info("image opened")
+                    # a = np.asarray(img)
+                    with open(f"/app/backend/data/mcp/image{self.count}.txt", "w") as file:
+                        logger.info("writing to file")
+                        file.write(encoded)
+                        logger.info("file written")
+                    # size = a.shape
+                    # logger.info(
+                    #     f"resizing image: {(int(100 * size[1] / size[0]), 100)}"
+                    # )
+
+                    # a = cv2.resize(
+                    #     a,
+                    #     (int(100 * size[1] / size[0]), 100),
+                    #     interpolation=cv2.INTER_LINEAR,
+                    # )
+                    # logger.info("image parsed")
+                    ims.append(f"image{self.count}.txt")
+                    self.count += 1
+                logger.info(f"sending message: {msg}")
+                msg[-1]["text"] += f"The image files are: {ims}"
+                logger.info(f"sending message: {msg}")
                 body["messages"][-1]["content"] = msg
-                body["messages"][-1]["content"].append(ims)
             except Exception as e:
                 return f"image list: {ims}"
+                logger.debug(f"exception: {e}")
             # if self.valves.vision_model_id:
 
             #     body["model"] = self.valves.vision_model_id
@@ -125,4 +154,5 @@ class Filter:
             #                 },
             #             }
             #         )
+        logger.info("returning")
         return body
