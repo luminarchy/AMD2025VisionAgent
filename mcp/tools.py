@@ -9,6 +9,7 @@ import torch
 from PIL import Image
 from mcp.types import ImageContent
 import cv2
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ def register_select(mcp):
         """
         Segments the document image into layout categories.
         file: the image to be segmented
+        returns the segments found including their labels, scores, and box coordinates in the format of [(label, [score, [box]])...]
         """
         f = open("images/" + file + ".txt")
         img = f.read()
@@ -65,7 +67,7 @@ def register_select(mcp):
             target_sizes=torch.tensor([img.size[::-1]]),
             threshold=threshold,
         )
-        output = ""
+        output = []
         for result in results:
             for score, label_id, box in zip(
                 result["scores"], result["labels"], result["boxes"]
@@ -73,9 +75,53 @@ def register_select(mcp):
                 score = round(score.item(), 2)
                 label = classes_map[label_id.item()]
                 box = [round(i, 2) for i in box.tolist()]
-                output += (f"{label}:{score} {box} \n")
+                output.append([label, (score, box)])
         return output
-
+        
+    @mcp.tool()
+    async def show_segments(file: str, boxes: list, ctx: Context) -> ImageContent:
+        """
+        Plots the segments and labels on the input image. 
+        file: the image that has been segmented. Can be retrieved through conversation history
+        boxes: the bounding boxes, labels, and scores. Formatted the same as the output of the tool 'segment'. i.e.: [(label, [score, [box]]), ...]
+        returns an image with the boxes drawn designating segments 
+        """
+        im = Image.open(file)
+        im = np.array(im)
+        print(im.shape)
+        for value in boxes:
+            rgb = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            im = cv2.rectangle(im, (value[1][1][0], value[1][1][1]), (value[1][1][2], value[1][1][3]), rgb, 1)
+            cv2.putText(im, f"{value[0]}: {value[1][0]}", (value[1][1][0], value[1][1][1]), cv2.FONT_HERSHEY_PLAIN, 1, rgb, 2)
+        PILimg = Image.fromarray(np.uint8(im)).convert('RGB')
+        save = "images/segment" + file + ".jpg"
+        cv2.imwrite(save, im)
+        return im.encode_image(PILimg)
+    
+    @mcp.tool()
+    async def get_segment(file: str, boxes: list, label: str, ctx: Context, idx: int = 0) -> ImageContent:
+        """
+        Retrieves a segment of the image and saves it as a file. 
+        file: the image that has been segmented. Can be retrieved through conversation history
+        boxes: the bounding boxes, labels, and scores of the segmented image. Formatted the same as the output of the tool 'segment'. i.e.: [(label, [score, [box]]), ...]
+        label: the label of the segment to retrieve
+        idx: (optional default = 0) if there are multiple segments with the same label, the index of the specific segment to retrieve
+        returns the image cropped to the region of the segment
+        """
+        im = Image.open(file)
+        im = np.array(im)
+        indices = [i for i, val in enumerate(boxes) if val[0] == label]
+        if len(indices) == 0:
+            logger.info(f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}")
+            return f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}"
+        if len(indices) == 1:
+            im = im[indices[0][1][1][1]:indices[0][1][1][3], indices[0][1][1][0]:indices[0][1][1][2], :]
+            PILimg = Image.fromarray(np.uint8(im)).convert('RGB')
+            return im.encode_image(PILimg)
+        else:
+            im = im[indices[idx][1][1][1]:indices[idx][1][1][3], indices[idx][1][1][0]:indices[idx][1][1][2], :]
+            PILimg = Image.fromarray(np.uint8(im)).convert('RGB')
+            return im.encode_image(PILimg)
     
     @mcp.tool()
     async def correct(file: str, dp: float = 1, dd: float = 1) -> ImageContent: 
