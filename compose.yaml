@@ -35,7 +35,7 @@ services:
       - /shared/huggingface:/hf_home
     command: ["/bin/sh", 
               "-c", 
-              "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code --enable-lora --max-lora-rank 320 --lora-extra-vocab-size 0 --limit-mm-per-prompt audio=3,image=3 --max-loras 2 --lora-modules speech=/speech-lora vision=/vision-lora
+              "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code --enable-lora --max-lora-rank 320 --lora-extra-vocab-size 512 --limit-mm-per-prompt audio=3,image=3 --max-loras 2 --lora-modules speech=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora vision=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora
               "]
       # --tensor-parallel-size 2
       # --max-model-len 74782
@@ -97,7 +97,7 @@ services:
     
     volumes:
       - /home/amysuo12/AMD2025VisionAgent/open-webui:/app/backend/data
-      - /home/amysuo12/AMD2025VisionAgent/open-webui/images:/app/backend/data/images
+      - /home/amysuo12/AMD2025VisionAgent/images:/app/backend/data/images
     devices:
       - /dev/kfd
       - /dev/dri    
@@ -115,7 +115,7 @@ services:
       - "8002:8002"
 
     volumes: 
-      - /home/amysuo12/AMD2025VisionAgent/open-webui/images:/mcp/images
+      - /home/amysuo12/AMD2025VisionAgent/images:/mcp/images
     environment: 
       HIP_VISIBLE_DEVICES: 4
     

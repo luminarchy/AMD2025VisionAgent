@@ -43,8 +43,8 @@ class Filter:
         pass
 
     def __init__(self):
-        if not os.path.exists("/app/backend/data/mcp"):
-            os.makedirs("/app/backend/data/mcp")
+        if not os.path.exists("/app/backend/data/images"):
+            os.makedirs("/app/backend/data/images")
         self.valves = self.Valves()
         self.count = 0
         pass
@@ -121,7 +121,7 @@ class Filter:
                     #     interpolation=cv2.INTER_LINEAR,
                     # )
                     # logger.info("image parsed")
-                    ims.append(f"image{self.count}.txt")
+                    ims.append(f"image{self.count}")
                     self.count += 1
                 logger.info(f"sending message: {msg}")
                 msg[-1]["text"] += f"The image files are: {ims}"

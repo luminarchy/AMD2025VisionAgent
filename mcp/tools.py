@@ -7,6 +7,7 @@ import requests
 from transformers import RTDetrV2ForObjectDetection, RTDetrImageProcessor
 import torch
 from PIL import Image
+from mcp.types import ImageContent
 import cv2
 
 logger = logging.getLogger(__name__)
@@ -49,12 +50,10 @@ def register_select(mcp):
     @mcp.tool()
     async def segment(file: str): 
         """
-        Retrieves information in the database by searching using the value of one parameter
-        parameter: the parameter to filter into (the column name in the database). 
-        value: the value to filter the search by. 
-        returns: all entries in the database that have <value> in their <parameter> column. 
+        Segments the document image into layout categories.
+        file: the image to be segmented
         """
-        f = open("/images/" + file)
+        f = open("images/" + file + ".txt")
         img = f.read()
         img = im.conv64toim(img)
         img = img.convert("RGB")
@@ -79,30 +78,38 @@ def register_select(mcp):
 
     
     @mcp.tool()
-    async def correct(file: str, color: str, dp: float, dd: float): 
+    async def correct(file: str, dp: float = 1, dd: float = 1) -> ImageContent: 
         """
-        Retrieves information in the database by searching using the values of multiple parameters. 
-        parameter: the parameters to filter into (the column name in the database). 
-        value: the values to filter the search by. Sorted by the corresponding parameter value in parameter. Indicies should match up for parameter and value. 
-        all: (default True) whether or not all parameters must match their corresponding value. If true, uses AND to find entries that match all constraints. If false, uses OR to find entries that match at least one constraint. 
-        limit: (default 10) the max number of entries to be returned 
-        returns: all entries in the database that have <value> in their <parameter> column. 
+        Applies a color-correcting filter onto a given image. 
+        file: the inputted image
+        dp: (default 1) the degree of protanopia colorblindness
+        dd: (default 1) the degree of deuteranopia colorblindness
         """
         correction = np.array([[1 - dp, 2.02344 * dp, -2.52581 * dp],
                          [0.494207 * dd, 1 - dd, 1.24827 * dd],
                          [0, 0, 1]]).T
 
-        f = open("/images/" + file)
+        f = open("images/" + file + ".txt")
         img = f.read()
         img = im.conv64toarray(img)
         img = np.uint8(np.dot(img, correction) * 255)
-        save = "corrected" + file
-        cv2.imwrite("/imags/corrected_" + file, img)
+        PILimg = Image.fromarray(np.uint8(img)).convert('RGB')
+        
+        save = "images/corrected" + file + ".jpg"
+        cv2.imwrite(save, img)
+        logger.info(f"Image stored at /app/backend/data/images/corected_{file}.jpg")
+        return im.encode_image(PILimg)
 
         
     
     @mcp.tool()
     async def simulate(file: str, color: str, degree: float):
+        """
+        Simulats an image in colorblind vision. 
+        file: the inputted imgae
+        color: the type of colorblindness
+        degree: the degree of colorblindness
+        """
         matrix = []
         match color:
             case "protanopia":
@@ -115,11 +122,14 @@ def register_select(mcp):
                 matrix = im.achromatopsia()
             case __:
                 logger.info("color blindness type not found")
-        f = open("/images/" + file)
+        f = open("images/" + file + ".txt")
         img = f.read()
         img = im.conv64toarray(img)
         
         imglms = np.dot(img[:,:,:3], im.lms())
         imglms = np.uint8(np.dot(img, matrix))
         imgrgb = np.uint8(np.dot(imglms, im.rgb()) * 255)
-        cv2.imwrite("/imags/simulated_" + file, imgrgb)
+        PILimg = Image.fromarray(np.uint8(imgrgb)).convert('RGB')
+        cv2.imwrite("images/simulated_" + file + ".jpg", imgrgb)
+        logger.info(f"Image stored at /app/backend/data/images/simulated_{file}.jpg")
+        return im.encode_image(PILimg)

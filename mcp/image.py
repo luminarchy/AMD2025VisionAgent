@@ -3,6 +3,8 @@ import io
 import base64
 import logging
 from PIL import Image
+from fastmcp.utilities.types import Image as Img
+from mcp.types import ImageContent
 import cv2
 
 def conv64toim(b64: str):
@@ -14,6 +16,13 @@ def conv64toarray(b64: str):
     img = conv64toim(b64)
     a = np.asarray(img)
     return a/255.0
+
+def encode_image(image) -> ImageContent:
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPG")
+    img_bytes = buffer.getvalue()
+    img_obj = Img(data=img_bytes, format="jpg")
+    return img_obj.to_image_content()
 
 def protanopia(degree: float):
     return np.array([[1 - degree, 2.02344 * degree, -2.52581 * degree],

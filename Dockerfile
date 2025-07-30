@@ -10,6 +10,7 @@ COPY mcp/server.py .
 COPY mcp/tools.py .
 COPY mcp/image.py .
 COPY mcp/requirements.txt .
+COPY mcp/images .
 RUN mkdir /images
 
 # Install additional dependencies

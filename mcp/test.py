@@ -1,0 +1,1 @@
+f = open("images/" + "image3" + ".txt")
