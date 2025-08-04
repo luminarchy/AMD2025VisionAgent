@@ -11,7 +11,6 @@ COPY mcp/tools.py .
 COPY mcp/image.py .
 COPY mcp/requirements.txt .
 COPY mcp/images .
-RUN mkdir /images
 
 # Install additional dependencies
 RUN pip3 install -r requirements.txt

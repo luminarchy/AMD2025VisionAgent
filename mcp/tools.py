@@ -55,20 +55,23 @@ def register_select(mcp):
         file: the image to be segmented
         returns the segments found including their labels, scores, and box coordinates in the format of [(label, [score, [box]])...]
         """
+        # Open the images file
         f = open("images/" + file + ".txt")
         img = f.read()
-        img = im.conv64toim(img)
+        img = im.conv64toim(img) # convert to RGB PIL imgae
         img = img.convert("RGB")
+        
+        # Setup segmentation model
         inputs = image_processor(images=[img], return_tensors="pt")
         with torch.no_grad(), torch.autocast(device_type='cuda', dtype= float):
-            outputs = model(**inputs)
+            outputs = model(**inputs) # Get outputs
         results = image_processor.post_process_object_detection(
-            outputs,
+            outputs, 
             target_sizes=torch.tensor([img.size[::-1]]),
             threshold=threshold,
-        )
+        ) 
         output = []
-        for result in results:
+        for result in results: # Format each result
             for score, label_id, box in zip(
                 result["scores"], result["labels"], result["boxes"]
             ):
@@ -86,20 +89,22 @@ def register_select(mcp):
         boxes: the bounding boxes, labels, and scores. Formatted the same as the output of the tool 'segment'. i.e.: [(label, [score, [box]]), ...]
         returns an image with the boxes drawn designating segments 
         """
-        im = Image.open(file)
-        im = np.array(im)
-        print(im.shape)
-        for value in boxes:
-            rgb = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-            im = cv2.rectangle(im, (value[1][1][0], value[1][1][1]), (value[1][1][2], value[1][1][3]), rgb, 1)
-            cv2.putText(im, f"{value[0]}: {value[1][0]}", (value[1][1][0], value[1][1][1]), cv2.FONT_HERSHEY_PLAIN, 1, rgb, 2)
-        PILimg = Image.fromarray(np.uint8(im)).convert('RGB')
-        save = "images/segment" + file + ".jpg"
-        cv2.imwrite(save, im)
-        return im.encode_image(PILimg)
+        f = open("images/" + file + ".txt") #read image into np array
+        img = f.read()
+        img = im.conv64toarray(img)
+        
+        for value in boxes: # draw bounding boxes
+            rgb = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) # random coloring
+            img = cv2.rectangle(img, (value[1][1][0], value[1][1][1]), (value[1][1][2], value[1][1][3]), rgb, 1)
+            cv2.putText(img, f"{value[0]}: {value[1][0]}", (value[1][1][0], value[1][1][1]), cv2.FONT_HERSHEY_PLAIN, 1, rgb, 2)
+        PILimg = Image.fromarray(np.uint8(im)).convert('RGB') # convert to PIL image
+        save = "images/segment" + file + ".jpg" # save as new file
+        cv2.imwrite(save, img) 
+        return f"The color corrected image file name is corected{file}"
+        #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
     
     @mcp.tool()
-    async def get_segment(file: str, boxes: list, label: str, ctx: Context, idx: int = 0) -> ImageContent:
+    async def get_specific_segment(file: str, boxes: list, label: str, ctx: Context, idx: int = 0) -> ImageContent:
         """
         Retrieves a segment of the image and saves it as a file. 
         file: the image that has been segmented. Can be retrieved through conversation history
@@ -108,43 +113,54 @@ def register_select(mcp):
         idx: (optional default = 0) if there are multiple segments with the same label, the index of the specific segment to retrieve
         returns the image cropped to the region of the segment
         """
-        im = Image.open(file)
-        im = np.array(im)
+        f = open("images/" + file + ".txt") # open image as np.array
+        img = f.read()
+        img = im.conv64toarray(img)
+
+        # Get the boxes with corresponding label
         indices = [i for i, val in enumerate(boxes) if val[0] == label]
-        if len(indices) == 0:
+        if len(indices) == 0: # if no boxes are found
             logger.info(f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}")
             return f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}"
-        if len(indices) == 1:
-            im = im[indices[0][1][1][1]:indices[0][1][1][3], indices[0][1][1][0]:indices[0][1][1][2], :]
-            PILimg = Image.fromarray(np.uint8(im)).convert('RGB')
+        if len(indices) == 1: # if there is only one box
+            img = img[indices[0][1][1][1]:indices[0][1][1][3], indices[0][1][1][0]:indices[0][1][1][2], :]
+            PILimg = Image.fromarray(np.uint8(img)).convert('RGB')
             return im.encode_image(PILimg)
-        else:
-            im = im[indices[idx][1][1][1]:indices[idx][1][1][3], indices[idx][1][1][0]:indices[idx][1][1][2], :]
-            PILimg = Image.fromarray(np.uint8(im)).convert('RGB')
-            return im.encode_image(PILimg)
+        else: # if there are multiple boxes
+            if idx >= len(indices): # if provided index is greater than number of boxes
+                logger.info(f"index out of bounds. There are {len(indices)} total segments for {label}")
+                return f"index out of bounds. There are {len(indices)} total segments for {label}"
+            # get box at index 
+            img = img[indices[idx][1][1][1]:indices[idx][1][1][3], indices[idx][1][1][0]:indices[idx][1][1][2], :]
+            PILimg = Image.fromarray(np.uint8(img)).convert('RGB') 
+            return f"The color corrected image file name is corected{file}"
+            #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
     
     @mcp.tool()
-    async def correct(file: str, dp: float = 1, dd: float = 1) -> ImageContent: 
+    async def correct(file: str, dp: float = 1, dd: float = 1): 
         """
-        Applies a color-correcting filter onto a given image. 
+        Applies a color-correcting filter onto a given image for colorblind vision
         file: the inputted image
         dp: (default 1) the degree of protanopia colorblindness
         dd: (default 1) the degree of deuteranopia colorblindness
+        returns the color-corrected image in accepted format
         """
-        correction = np.array([[1 - dp, 2.02344 * dp, -2.52581 * dp],
-                         [0.494207 * dd, 1 - dd, 1.24827 * dd],
-                         [0, 0, 1]]).T
-
-        f = open("images/" + file + ".txt")
-        img = f.read()
+        correction = np.array([[1 - dd/2, dd/2, 0],
+                         [dp/2, 1 - dd, 1-dp/2 * dd],
+                         [dp/4, dd/4, 1 - (dp + dd)/4]]).T # correction matrix
+        
+        # open file
+        f = open("images/" + file + ".txt") 
+        img = f.read() # read image
         img = im.conv64toarray(img)
-        img = np.uint8(np.dot(img, correction) * 255)
+        img = np.uint8(np.dot(img, correction) * 255) # apply correction
         PILimg = Image.fromarray(np.uint8(img)).convert('RGB')
         
-        save = "images/corrected" + file + ".jpg"
+        save = "images/corrected" + file + ".jpg" # save file
         cv2.imwrite(save, img)
-        logger.info(f"Image stored at /app/backend/data/images/corected_{file}.jpg")
-        return im.encode_image(PILimg)
+        logger.info(f"Image stored at /app/backend/data/images/corected{file}.jpg")
+        return f"The color corrected image file name is corected{file}"
+        #return f"Here is the color corrected image: ![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
 
         
     
@@ -157,7 +173,7 @@ def register_select(mcp):
         degree: the degree of colorblindness
         """
         matrix = []
-        match color:
+        match color: # get colorblindness matrix
             case "protanopia":
                 matrix = im.protanopia()
             case "deuteranopia":
@@ -168,14 +184,15 @@ def register_select(mcp):
                 matrix = im.achromatopsia()
             case __:
                 logger.info("color blindness type not found")
-        f = open("images/" + file + ".txt")
+        f = open("images/" + file + ".txt") # open file
         img = f.read()
         img = im.conv64toarray(img)
         
-        imglms = np.dot(img[:,:,:3], im.lms())
-        imglms = np.uint8(np.dot(img, matrix))
-        imgrgb = np.uint8(np.dot(imglms, im.rgb()) * 255)
+        imglms = np.dot(img[:,:,:3], im.lms()) # convert to lms colorspace
+        imglms = np.uint8(np.dot(img, matrix)) # apply filter
+        imgrgb = np.uint8(np.dot(imglms, im.rgb()) * 255) # convert back to RGB
         PILimg = Image.fromarray(np.uint8(imgrgb)).convert('RGB')
-        cv2.imwrite("images/simulated_" + file + ".jpg", imgrgb)
+        cv2.imwrite("images/simulated_" + file + ".jpg", imgrgb) # save image
         logger.info(f"Image stored at /app/backend/data/images/simulated_{file}.jpg")
-        return im.encode_image(PILimg)
+        return f"The color corrected image file name is corected{file}"
+        #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"

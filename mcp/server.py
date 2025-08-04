@@ -5,10 +5,11 @@ import asyncio
 
 
 async def main():
+    # run server async
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.DEBUG)
     mcp = FastMCP("base mcp server", port = "8002")
-    await initialize_tools(mcp)
+    await initialize_tools(mcp) # set up tools
     await mcp.run_async(transport='stdio')
 
 
@@ -17,5 +18,5 @@ if __name__ == "__main__":
     asyncio.run(main())
     
 
-# command to run: mcpo --port 8002 -- python poem.py
+# command to run: mcpo --port 8002 -- python server.py
 

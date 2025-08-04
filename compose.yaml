@@ -35,8 +35,9 @@ services:
       - /shared/huggingface:/hf_home
     command: ["/bin/sh", 
               "-c", 
-              "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code --enable-lora --max-lora-rank 320 --lora-extra-vocab-size 512 --limit-mm-per-prompt audio=3,image=3 --max-loras 2 --lora-modules speech=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora vision=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora
+              "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code 
               "]
+      #--enable-lora --max-lora-rank 320 --lora-extra-vocab-size 512 --limit-mm-per-prompt audio=3,image=3 --max-loras 2 --lora-modules speech=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora vision=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora
       # --tensor-parallel-size 2
       # --max-model-len 74782
       # Salesforce/Llama-xLAM-2-70b-fc-r
