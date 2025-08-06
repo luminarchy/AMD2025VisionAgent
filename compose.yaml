@@ -112,6 +112,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    expose:
+      - "8002"
     ports: 
       - "8002:8002"
 
@@ -123,8 +125,13 @@ services:
       
     command: ["mcpo", "--port", "8002", "--", "python", "server.py"]
 
-
-
+  images:
+    image: httpd:2.4
+    ports: 
+      - "8004:80"
+    
+    volumes:
+      - /home/amysuo12/AMD2025VisionAgent/images:/usr/local/apache2/htdocs/
   # kokoro-fastapi-cpu:
   #   ports:
   #       - 8880:8880

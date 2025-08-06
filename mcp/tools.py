@@ -133,11 +133,11 @@ def register_select(mcp):
             # get box at index 
             img = img[indices[idx][1][1][1]:indices[idx][1][1][3], indices[idx][1][1][0]:indices[idx][1][1][2], :]
             PILimg = Image.fromarray(np.uint8(img)).convert('RGB') 
-            return f"The color corrected image file name is corected{file}"
-            #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
+            #return f"The color corrected image file name is corected{file}"
+            return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
     
     @mcp.tool()
-    async def correct(file: str, dp: float = 1, dd: float = 1): 
+    async def correct(file: str, dp: float = 1, dd: float = 1) -> str: 
         """
         Applies a color-correcting filter onto a given image for colorblind vision
         file: the inputted image
@@ -158,9 +158,11 @@ def register_select(mcp):
         
         save = "images/corrected" + file + ".jpg" # save file
         cv2.imwrite(save, img)
-        logger.info(f"Image stored at /app/backend/data/images/corected{file}.jpg")
-        return f"The color corrected image file name is corected{file}"
-        #return f"Here is the color corrected image: ![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
+        logger.info(f"Image stored at /images/corected{file}.jpg")
+        #return f"The color corrected image file name is corected{file}"
+        #data:image/jpeg;base64,{im.encode_image(PILimg)}
+        return f"![image](http://localhost:8004/corrected{file}.jpg)"
+    
 
         
     
