@@ -37,7 +37,7 @@ model_name = "ds4sd/docling-layout-heron"
 threshold = 0.6
 image_processor = RTDetrImageProcessor.from_pretrained(model_name)
 model = RTDetrV2ForObjectDetection.from_pretrained(model_name)
-
+boxdict = {}
 
 
 async def initialize_tools(mcp: FastMCP):
@@ -51,7 +51,7 @@ def register_select(mcp):
     @mcp.tool()
     async def segment(file: str): 
         """
-        Segments the document image into layout categories.
+        Segments the image into layout categories.
         file: the image to be segmented
         returns the segments found including their labels, scores, and box coordinates in the format of [(label, [score, [box]])...]
         """
@@ -77,34 +77,40 @@ def register_select(mcp):
             ):
                 score = round(score.item(), 2)
                 label = classes_map[label_id.item()]
-                box = [round(i, 2) for i in box.tolist()]
+                box = [round(i) for i in box.tolist()]
                 output.append([label, (score, box)])
-        return output
+        global boxdict
+        boxdict[file] = output
+        return f"The following segments were found {[val[0] for val in output]}"
         
     @mcp.tool()
-    async def show_segments(file: str, boxes: list, ctx: Context) -> ImageContent:
+    async def show_segments(ctx: Context, file: str = "") -> ImageContent:
         """
-        Plots the segments and labels on the input image. 
-        file: the image that has been segmented. Can be retrieved through conversation history
-        boxes: the bounding boxes, labels, and scores. Formatted the same as the output of the tool 'segment'. i.e.: [(label, [score, [box]]), ...]
+        Visualizes a segmented image by drawing bounding boxes onto the image
+        file: the image that has been segmented. If not provided, this should be the last inputted image in the conversation history. 
         returns an image with the boxes drawn designating segments 
         """
+        boxes = boxdict.get(file, None)
+        if boxes == None:
+            return("No segments found. Use the segment tool function first to find the segments for the image.")
+        if file == "": 
+            return("Please specify which file to use")
         f = open("images/" + file + ".txt") #read image into np array
         img = f.read()
         img = im.conv64toarray(img)
         
         for value in boxes: # draw bounding boxes
-            rgb = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) # random coloring
+            rgb = (random.randint(0, 1), random.randint(0, 1), random.randint(0, 1)) # random coloring
             img = cv2.rectangle(img, (value[1][1][0], value[1][1][1]), (value[1][1][2], value[1][1][3]), rgb, 1)
             cv2.putText(img, f"{value[0]}: {value[1][0]}", (value[1][1][0], value[1][1][1]), cv2.FONT_HERSHEY_PLAIN, 1, rgb, 2)
-        PILimg = Image.fromarray(np.uint8(im)).convert('RGB') # convert to PIL image
+        #PILimg = Image.fromarray(np.uint8(img)).convert('RGB') # convert to PIL image
         save = "images/segment" + file + ".jpg" # save as new file
         cv2.imwrite(save, img) 
-        return f"The color corrected image file name is corected{file}"
+        return f"![image](http://localhost:8004/segment{file}.jpg)"
         #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
     
     @mcp.tool()
-    async def get_specific_segment(file: str, boxes: list, label: str, ctx: Context, idx: int = 0) -> ImageContent:
+    async def get_specific_segment(label: str, ctx: Context, file: str, idx: int = 0) -> ImageContent:
         """
         Retrieves a segment of the image and saves it as a file. 
         file: the image that has been segmented. Can be retrieved through conversation history
@@ -113,6 +119,11 @@ def register_select(mcp):
         idx: (optional default = 0) if there are multiple segments with the same label, the index of the specific segment to retrieve
         returns the image cropped to the region of the segment
         """
+        boxes = boxdict.get(file, None)
+        if boxes == None:
+            return("No segments found. Use the segment tool function first to find the segments for the image.")
+        if file == "": 
+            return("Please specify which file to use")
         f = open("images/" + file + ".txt") # open image as np.array
         img = f.read()
         img = im.conv64toarray(img)
@@ -122,8 +133,9 @@ def register_select(mcp):
         if len(indices) == 0: # if no boxes are found
             logger.info(f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}")
             return f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}"
-        if len(indices) == 1: # if there is only one box
-            img = img[indices[0][1][1][1]:indices[0][1][1][3], indices[0][1][1][0]:indices[0][1][1][2], :]
+        elif len(indices) == 1: # if there is only one box
+            i = indices[0]
+            img = img[boxes[i][1][1][1]:boxes[i][1][1][3], boxes[i][1][1][0]:boxes[i][1][1][2], :]
             PILimg = Image.fromarray(np.uint8(img)).convert('RGB')
             return im.encode_image(PILimg)
         else: # if there are multiple boxes
@@ -131,10 +143,13 @@ def register_select(mcp):
                 logger.info(f"index out of bounds. There are {len(indices)} total segments for {label}")
                 return f"index out of bounds. There are {len(indices)} total segments for {label}"
             # get box at index 
-            img = img[indices[idx][1][1][1]:indices[idx][1][1][3], indices[idx][1][1][0]:indices[idx][1][1][2], :]
-            PILimg = Image.fromarray(np.uint8(img)).convert('RGB') 
+            i = indices[idx]
+            img = img[boxes[i][1][1][1]:boxes[i][1][1][3], boxes[i][1][1][0]:boxes[i][1][1][2], :]
+            #PILimg = Image.fromarray(np.uint8(img)).convert('RGB') 
             #return f"The color corrected image file name is corected{file}"
-            return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
+            save = "images/" + label + file + ".jpg" # save as new file
+        cv2.imwrite(save, img) 
+        return f"![image](http://localhost:8004/{label}{file}.jpg)"
     
     @mcp.tool()
     async def correct(file: str, dp: float = 1, dd: float = 1) -> str: 
@@ -194,7 +209,7 @@ def register_select(mcp):
         imglms = np.uint8(np.dot(img, matrix)) # apply filter
         imgrgb = np.uint8(np.dot(imglms, im.rgb()) * 255) # convert back to RGB
         PILimg = Image.fromarray(np.uint8(imgrgb)).convert('RGB')
-        cv2.imwrite("images/simulated_" + file + ".jpg", imgrgb) # save image
-        logger.info(f"Image stored at /app/backend/data/images/simulated_{file}.jpg")
-        return f"The color corrected image file name is corected{file}"
+        cv2.imwrite("images/simulated" + file + ".jpg", imgrgb) # save image
+        logger.info(f"Image stored at /app/backend/data/images/simulated{file}.jpg")
+        return f"![image](http://localhost:8004/simulated{file}.jpg)"
         #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
