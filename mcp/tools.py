@@ -105,6 +105,7 @@ def register_select(mcp):
             cv2.putText(img, f"{value[0]}: {value[1][0]}", (value[1][1][0], value[1][1][1]), cv2.FONT_HERSHEY_PLAIN, 1, rgb, 2)
         #PILimg = Image.fromarray(np.uint8(img)).convert('RGB') # convert to PIL image
         save = "images/segment" + file + ".jpg" # save as new file
+        img = cv2.cvtColor(np.uint8(img *255), cv2.COLOR_RGB2BGR)
         cv2.imwrite(save, img) 
         return f"![image](http://localhost:8004/segment{file}.jpg)"
         #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
@@ -124,20 +125,19 @@ def register_select(mcp):
             return("No segments found. Use the segment tool function first to find the segments for the image.")
         if file == "": 
             return("Please specify which file to use")
+        lab = label.lower().strip()
         f = open("images/" + file + ".txt") # open image as np.array
         img = f.read()
-        img = im.conv64toarray(img)
+        img = np.uint8(im.conv64toarray(img)*255)
 
         # Get the boxes with corresponding label
-        indices = [i for i, val in enumerate(boxes) if val[0] == label]
+        indices = [i for i, val in enumerate(boxes) if val[0] == lab]
         if len(indices) == 0: # if no boxes are found
             logger.info(f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}")
             return f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}"
         elif len(indices) == 1: # if there is only one box
             i = indices[0]
             img = img[boxes[i][1][1][1]:boxes[i][1][1][3], boxes[i][1][1][0]:boxes[i][1][1][2], :]
-            PILimg = Image.fromarray(np.uint8(img)).convert('RGB')
-            return im.encode_image(PILimg)
         else: # if there are multiple boxes
             if idx >= len(indices): # if provided index is greater than number of boxes
                 logger.info(f"index out of bounds. There are {len(indices)} total segments for {label}")
@@ -147,9 +147,10 @@ def register_select(mcp):
             img = img[boxes[i][1][1][1]:boxes[i][1][1][3], boxes[i][1][1][0]:boxes[i][1][1][2], :]
             #PILimg = Image.fromarray(np.uint8(img)).convert('RGB') 
             #return f"The color corrected image file name is corected{file}"
-            save = "images/" + label + file + ".jpg" # save as new file
+        save = "images/" + lab + file + ".jpg" # save as new file
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(save, img) 
-        return f"![image](http://localhost:8004/{label}{file}.jpg)"
+        return f"![image](http://localhost:8004/{lab}{file}.jpg)"
     
     @mcp.tool()
     async def correct(file: str, dp: float = 1, dd: float = 1) -> str: 
@@ -172,6 +173,7 @@ def register_select(mcp):
         PILimg = Image.fromarray(np.uint8(img)).convert('RGB')
         
         save = "images/corrected" + file + ".jpg" # save file
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(save, img)
         logger.info(f"Image stored at /images/corected{file}.jpg")
         #return f"The color corrected image file name is corected{file}"
@@ -209,7 +211,8 @@ def register_select(mcp):
         imglms = np.uint8(np.dot(img, matrix)) # apply filter
         imgrgb = np.uint8(np.dot(imglms, im.rgb()) * 255) # convert back to RGB
         PILimg = Image.fromarray(np.uint8(imgrgb)).convert('RGB')
-        cv2.imwrite("images/simulated" + file + ".jpg", imgrgb) # save image
+        img = cv2.cvtColor(imgrgb, cv2.COLOR_RGB2BGR)
+        cv2.imwrite("images/simulated" + file + ".jpg", img) # save image
         logger.info(f"Image stored at /app/backend/data/images/simulated{file}.jpg")
         return f"![image](http://localhost:8004/simulated{file}.jpg)"
         #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"

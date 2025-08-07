@@ -8,7 +8,7 @@ async def main():
     # run server async
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.DEBUG)
-    mcp = FastMCP("base mcp server", port = "8002")
+    mcp = FastMCP("vision mcp server", port = "8006")
     await initialize_tools(mcp) # set up tools
     await mcp.run_async(transport='stdio')
 
