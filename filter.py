@@ -32,13 +32,9 @@ logger = setup_logger()
 
 class Filter:
     class Valves(BaseModel):
-        enabled_for_admins: bool = Field(
-            default=False,
-            description="Whether dynamic vision routing is enabled for admin users.",
-        )
-        enabled_for_users: bool = Field(
-            default=True,
-            description="Whether dynamic vision routing is enabled for regular users.",
+        max_images: int = Field(
+            default=10,
+            description="Maximum number of images to keep in storage",
         )
         pass
 
@@ -57,11 +53,8 @@ class Filter:
         __user__: Optional[dict] = None,
     ) -> dict:
         logger.info(f"path: {os.path.abspath(__file__)}")
-        if __user__ is not None:
-            if __user__.get("role") == "admin" and not self.valves.enabled_for_admins:
-                return body
-            elif __user__.get("role") == "user" and not self.valves.enabled_for_users:
-                return body
+        if self.count >= self.valves.max_images:
+            self.count = 0
         messages = body.get("messages")
         if messages is None:
             # Handle the case where messages is None
