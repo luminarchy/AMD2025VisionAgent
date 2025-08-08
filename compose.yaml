@@ -1,43 +1,43 @@
 
 services:
   
-  # vllm:
-  #   image: rocm/vllm:latest
-  #   devices:
-  #     - /dev/kfd
-  #     - /dev/dri
-  #   security_opt:
-  #     - seccomp:unconfined
+  vllm:
+    image: rocm/vllm:latest
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    security_opt:
+      - seccomp:unconfined
     
-  #   group_add:
-  #     - "video"
-  #     - "render"
-  #   ipc: 
-  #     "host"
-  #   ports: 
-  #     - "8001:8001"
-  #   cap_add:
-  #     - SYS_PTRACE
-  #   environment: 
-  #     HIP_VISIBLE_DEVICES: 4
-  #     #ROCR_VISIBLE_DEVICES: 5,6
+    group_add:
+      - "video"
+      - "render"
+    ipc: 
+      "host"
+    ports: 
+      - "8001:8001"
+    cap_add:
+      - SYS_PTRACE
+    environment: 
+      HIP_VISIBLE_DEVICES: 4
+      #ROCR_VISIBLE_DEVICES: 5,6
 
-  #     # one of these makes it work and idk which ones
-  #     # VLLM_SKIP_P2P_CHECK: 1
-  #     # NCCL_CUMEM_ENABLE: 0
-  #     # NCCL_IB_DISABLE: 1
-  #     HSA_ENABLE_IPC_MODE_LEGACY: 0
-  #     # why not have all of them 
-  #     VLLM_USE_TRITON_FLASH_ATTN: 0
-  #     HF_HUB_CACHE: /hf_home
+      # one of these makes it work and idk which ones
+      # VLLM_SKIP_P2P_CHECK: 1
+      # NCCL_CUMEM_ENABLE: 0
+      # NCCL_IB_DISABLE: 1
+      HSA_ENABLE_IPC_MODE_LEGACY: 0
+      # why not have all of them 
+      VLLM_USE_TRITON_FLASH_ATTN: 0
+      HF_HUB_CACHE: /hf_home
 
-  #   volumes:
-  #     - /shared/huggingface:/hf_home
-  #   command: ["/bin/sh", 
-  #             "-c", 
-  #             "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code 
-  #             "]
-      #--enable-lora --max-lora-rank 320 --lora-extra-vocab-size 512 --limit-mm-per-prompt audio=3,image=3 --max-loras 2 --lora-modules speech=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora vision=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora
+    volumes:
+      - /shared/huggingface:/hf_home
+    command: ["/bin/sh", 
+              "-c", 
+              "vllm serve microsoft/Phi-4-multimodal-instruct --port 8001 --trust_remote_code 
+              "]
+      # --enable-lora --max-lora-rank 320 --lora-extra-vocab-size 512 --limit-mm-per-prompt audio=3,image=3 --max-loras 2 --lora-modules speech=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora vision=/snapshots/33e62acdd07cd7d6635badd529aa0a3467bb9c6a/speech-lora
       # --tensor-parallel-size 2
       # --max-model-len 74782
       # Salesforce/Llama-xLAM-2-70b-fc-r

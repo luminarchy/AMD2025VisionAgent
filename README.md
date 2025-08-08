@@ -112,14 +112,13 @@ The response from each tool that the AI agent calls is then fed back into the ag
    docker compose up -d
    ```
 
-* The current docker compose file is set up with the model Llama-xLAM-2-70b-fc-r, which is optimized for function calling capabilities. To change the model, replace the command parameter of the vllm service with:
+* The current docker compose file is set up with the model `Phi-4-multimodal-instruct`, which is optimized for function calling capabilities. To change the model, replace the command parameter of the vllm service with:
   
   ```yaml
   command: ["/bin/sh", 
             "-c", 
             "vllm serve <model_name> 
-            --port 8001 --enforce-eager 
-            --gpu-memory-utilization 0.95 --tensor-parallel-size 2"]
+            --port 8001"]
   ```
 * Make sure to set up the vllm container to direct to your local models folder. You can do this by modifying the volumes parameter
   
