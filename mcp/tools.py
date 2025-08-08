@@ -92,7 +92,7 @@ def register_select(mcp):
         """ Visualizes a segmented image by drawing bounding boxes onto the image
         Args:
             file (string): the image that has been segmented. If not provided, this should be the last inputted image in the conversation history. 
-        returns an image with the boxes drawn designating segments 
+        returns an image with the boxes drawn designs
         """
         try:
             boxes = boxdict.get(file, None)
@@ -139,7 +139,7 @@ def register_select(mcp):
             img = np.uint8(im.conv64toarray(img)*255)
     
             # Get the boxes with corresponding label
-            indices = [i for i, val in enumerate(boxes) if val[0] == lab]
+            indices = [i for i, val in enumerate(boxes) if val[0].lower() == lab]
             if len(indices) == 0: # if no boxes are found
                 logger.info(f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}")
                 return f"item not found. Ensure that label input is correct. Bounding boxes: {boxes}. All possible labels: {classes_map}"
@@ -212,11 +212,11 @@ def register_select(mcp):
         matrix = []
         match color: # get colorblindness matrix
             case "protanopia":
-                matrix = im.protanopia()
+                matrix = im.protanopia(degree)
             case "deuteranopia":
-                matrix = im.deuteranopia()
+                matrix = im.deuteranopia(degree)
             case "tritanopia":
-                matrix = im.tritanopia()
+                matrix = im.tritanopia(degree)
             case "achromatopsia":
                 matrix = im.achromatopsia()
             case __:
@@ -238,6 +238,7 @@ def register_select(mcp):
             logger.info(f"Image simulate error: {e}")
             return f"Image simulate error: {e}"
         #return f"![image](data:image/jpeg;base64,{im.encode_image(PILimg)})"
+
 
     @mcp.tool()
     async def crop(file: str, ctx: Context, top: int = 0, bottom: int = 0, left: int = 0, right: int = 0):

@@ -3,7 +3,6 @@ title: Image convertor
 requirements: numpy, opencv-python
 """
 
-
 from pydantic import BaseModel, Field
 from typing import Callable, Awaitable, Any, Optional, Literal
 import logging
@@ -34,8 +33,9 @@ class Filter:
     class Valves(BaseModel):
         max_images: int = Field(
             default=10,
-            description="Maximum number of images to keep in storage",
+            description="Maximum number of images to store in memory",
         )
+
         pass
 
     def __init__(self):
@@ -94,26 +94,12 @@ class Filter:
                 for image in images:
                     logger.info("parsing image")
                     header, encoded = image.split(",", 1)
-                    # image_bytes = base64.b64decode(encoded)
-                    # logger.info("image opening")
-                    # img = Image.open(io.BytesIO(image_bytes))
-                    # logger.info("image opened")
-                    # a = np.asarray(img)
-                    with open(f"/app/backend/data/images/image{self.count}.txt", "w") as file:
+                    with open(
+                        f"/app/backend/data/images/image{self.count}.txt", "w"
+                    ) as file:
                         logger.info("writing to file")
                         file.write(encoded)
                         logger.info("file written")
-                    # size = a.shape
-                    # logger.info(
-                    #     f"resizing image: {(int(100 * size[1] / size[0]), 100)}"
-                    # )
-
-                    # a = cv2.resize(
-                    #     a,
-                    #     (int(100 * size[1] / size[0]), 100),
-                    #     interpolation=cv2.INTER_LINEAR,
-                    # )
-                    # logger.info("image parsed")
                     ims.append(f"image{self.count}")
                     self.count += 1
                 logger.info(f"sending message: {msg}")
