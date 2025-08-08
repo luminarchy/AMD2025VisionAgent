@@ -38,6 +38,8 @@ meow
 
 Model Context Protocols (MCPs) have brought a new perspective on AI and Large Language Models (LLMs), emerging as a powerful tool able to connect multiple models and APIs to remote machines. The  open-source framework works similar to REST API and provides an interface that allows models to interact with data and context, universalizing the way that AI agents integrate into systems. This project demonstrates the capabilities of MCPs and how they can be used with AMD ROCm machines. The repository contains a Docker Compose file that uses vLLM to build an AI vision agent that has function calling capabilities. It contains tools and functionalities to segment images of documents as well as add color filters. 
 
+This AI Vision Agent will allow users to quickly and easily be able to process images with an MCP server that provides segmentation tools, color filters for accessibility, and basic image functions such as crop and resize. 
+
 ### ✨ How it Works ✨
 
 * ![architecture](assets/arch.png)
