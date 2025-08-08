@@ -72,7 +72,7 @@ Segmentation results return labels, scores, and bounding box coordinates. Other 
 
 The response from each tool that the AI agent calls is then fed back into the agent where it decides if the information that it has is enough to answer the user input. If it is not, it cycles through the tool calling cycle until it decides that the information is enough. Once the AI Agent reaches that point, it builds a response using the information that it retrieved from the tool calls and returns that back out to the user.
 
-* ![flowchart](assets/flowchart.drawio.png)
+* ![flowchart](assets/flowchart.png)
 
 <!-- GETTING STARTED -->
 
